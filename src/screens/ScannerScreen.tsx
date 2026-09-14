@@ -164,7 +164,8 @@ export default function ScannerScreen() {
     const interval = setInterval(() => {
       fetchActiveEvent();
       fetchProfile();
-    }, 30000);
+    }, 120000); // Polling cada 2 min — reduce carga en BD un 75% sin impacto en UX
+
 
     return () => {
       isMounted = false;
