@@ -7,9 +7,12 @@ import {
   ActivityIndicator,
   SafeAreaView,
   StatusBar,
+  Platform,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Feather, Ionicons } from '@expo/vector-icons';
+import Logo from '../components/Logo';
 import apiClient from '../api/client';
 import { useAuth } from '../store/authStore';
 import type { RootStackParamList } from '../navigation/AppNavigator';
@@ -91,9 +94,7 @@ export default function HomeScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <View style={styles.logoBadge}>
-            <Text style={styles.logoText}>AM</Text>
-          </View>
+          <Logo size={32} />
           <View>
             <Text style={styles.headerTitle}>Access Manager</Text>
             <Text style={styles.headerSubtitle} numberOfLines={1}>{email}</Text>
@@ -107,7 +108,7 @@ export default function HomeScreen() {
             onPress={() => navigation.navigate('ProfileSelector')}
             activeOpacity={0.75}
           >
-            <Text style={styles.profileSwitchIcon}>⇄</Text>
+            <Feather name="repeat" size={16} color="#94A3B8" />
           </TouchableOpacity>
         )}
       </View>
@@ -136,32 +137,44 @@ export default function HomeScreen() {
         {/* Scanner card */}
         <TouchableOpacity
           style={styles.scannerCard}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
           onPress={() => navigation.navigate('Scanner')}
         >
-          <Text style={styles.scannerIcon}>📷</Text>
-          <Text style={styles.scannerTitle}>Abrir Scanner</Text>
-          <Text style={styles.scannerHint}>Toca para escanear entradas QR</Text>
+          <View style={styles.scannerIconWrapper}>
+            <Feather name="maximize" size={32} color="#38BDF8" />
+          </View>
+          <Text style={styles.scannerTitle}>ABRIR SCANNER</Text>
+          <Text style={styles.scannerHint}>Toca para activar la cámara y validar entradas QR</Text>
+          
+          <View style={styles.scannerStatusPill}>
+            <View style={styles.scannerStatusDot} />
+            <Text style={styles.scannerStatusText}>TERMINAL ACTIVO</Text>
+          </View>
         </TouchableOpacity>
 
         {/* Pool: show season info instead of event */}
         {isSwimmingPool ? (
           <View style={styles.eventCard}>
-            <Text style={styles.eventCardTitle}>🏊 Modo Piscina</Text>
+            <View style={styles.eventCardHeader}>
+              <View style={styles.cardHeaderWithIcon}>
+                <Ionicons name="water-outline" size={14} color="#0EA5E9" style={{ marginRight: 6 }} />
+                <Text style={styles.eventCardTitle}>Modo Piscina</Text>
+              </View>
+            </View>
             <View style={styles.eventInfo}>
               <Text style={[styles.eventName, { fontSize: 15 }]}>
-                Acceso por día y abono de temporada
+                Acceso diario y abono de temporada
               </Text>
               {clubProfile?.venue ? (
                 <View style={styles.eventRow}>
-                  <Text style={styles.eventEmoji}>📍</Text>
+                  <Feather name="map-pin" size={13} color="#64748B" style={{ marginRight: 6 }} />
                   <Text style={styles.eventValue}>{clubProfile.venue}</Text>
                 </View>
               ) : null}
-              <View style={[styles.eventActiveDot, { marginTop: 8 }]}>
-                <View style={[styles.activePulse, { backgroundColor: '#0e7490' }]} />
-                <Text style={[styles.eventActiveLabel, { color: '#22d3ee' }]}>
-                  Escanea QR en la entrada
+              <View style={[styles.eventActiveDot, { marginTop: 10 }]}>
+                <View style={[styles.activePulse, { backgroundColor: '#0284C7' }]} />
+                <Text style={[styles.eventActiveLabel, { color: '#38BDF8' }]}>
+                  Validación QR en puerta
                 </Text>
               </View>
             </View>
@@ -170,14 +183,17 @@ export default function HomeScreen() {
           /* Football: active event card */
           <View style={styles.eventCard}>
             <View style={styles.eventCardHeader}>
-              <Text style={styles.eventCardTitle}>Evento activo</Text>
+              <View style={styles.cardHeaderWithIcon}>
+                <Feather name="activity" size={13} color="#64748B" style={{ marginRight: 6 }} />
+                <Text style={styles.eventCardTitle}>Evento activo</Text>
+              </View>
               <TouchableOpacity onPress={fetchActiveEvent} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Text style={styles.refreshButton}>↻</Text>
+                <Feather name="rotate-cw" size={15} color="#64748B" />
               </TouchableOpacity>
             </View>
 
             {eventLoading ? (
-              <ActivityIndicator color="#7c3aed" style={{ marginTop: 12 }} />
+              <ActivityIndicator color="#0284C7" style={{ marginTop: 16 }} />
             ) : event ? (
               <View style={styles.eventInfo}>
                 <View style={styles.eventActiveDot}>
@@ -186,7 +202,7 @@ export default function HomeScreen() {
                 </View>
                 <Text style={styles.eventName}>{event.name}</Text>
                 <View style={styles.eventRow}>
-                  <Text style={styles.eventEmoji}>📅</Text>
+                  <Feather name="calendar" size={13} color="#64748B" style={{ marginRight: 8 }} />
                   <Text style={styles.eventValue}>
                     {new Date(event.date).toLocaleDateString('es-ES', {
                       day: '2-digit',
@@ -198,15 +214,15 @@ export default function HomeScreen() {
                   </Text>
                 </View>
                 <View style={styles.eventRow}>
-                  <Text style={styles.eventEmoji}>📍</Text>
+                  <Feather name="map-pin" size={13} color="#64748B" style={{ marginRight: 8 }} />
                   <Text style={styles.eventValue}>{event.venue}</Text>
                 </View>
               </View>
             ) : (
               <View style={styles.noEvent}>
-                <Text style={styles.noEventEmoji}>🕐</Text>
+                <Feather name="clock" size={28} color="#475569" style={{ marginBottom: 8 }} />
                 <Text style={styles.noEventText}>
-                  {eventError ? 'Sin evento activo ahora' : 'No se pudo cargar el evento'}
+                  {eventError ? 'Sin evento activo en este momento' : 'No se pudo cargar el evento'}
                 </Text>
                 <TouchableOpacity onPress={fetchActiveEvent} style={styles.retryButton}>
                   <Text style={styles.retryText}>Reintentar</Text>
@@ -223,6 +239,7 @@ export default function HomeScreen() {
         onPress={() => logout()}
         activeOpacity={0.8}
       >
+        <Feather name="log-out" size={16} color="#EF4444" style={{ marginRight: 6 }} />
         <Text style={styles.logoutText}>Cerrar sesión</Text>
       </TouchableOpacity>
     </SafeAreaView>
@@ -232,7 +249,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: '#090D16',
   },
   header: {
     flexDirection: 'row',
@@ -242,7 +259,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1e293b',
+    borderBottomColor: '#1E293B',
   },
   headerLeft: {
     flexDirection: 'row',
@@ -254,120 +271,149 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 11,
-    backgroundColor: '#7c3aed',
+    backgroundColor: 'rgba(2, 132, 199, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(2, 132, 199, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoText: {
-    color: '#fff',
-    fontWeight: '800',
-    fontSize: 13,
-  },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
-    color: '#f1f5f9',
+    color: '#F8FAFC',
+    letterSpacing: 0.3,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: '#64748b',
+    color: '#64748B',
     marginTop: 1,
     maxWidth: 200,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   profileSwitchButton: {
     width: 38,
     height: 38,
-    borderRadius: 12,
-    backgroundColor: '#1e293b',
+    borderRadius: 11,
+    backgroundColor: '#0F172A',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#1E293B',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  profileSwitchIcon: {
-    color: '#94a3b8',
-    fontSize: 18,
-    fontWeight: '600',
   },
   profileBadgeRow: {
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#1e293b',
+    borderBottomColor: '#1E293B',
   },
   profileBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(124,58,237,0.08)',
+    backgroundColor: 'rgba(2, 132, 199, 0.08)',
     borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 7,
     borderWidth: 1,
-    borderColor: 'rgba(124,58,237,0.2)',
+    borderColor: 'rgba(2, 132, 199, 0.2)',
     alignSelf: 'flex-start',
   },
   profileBadgeDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: '#a78bfa',
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#38BDF8',
   },
   profileBadgeName: {
-    color: '#c4b5fd',
+    color: '#E0F2FE',
     fontSize: 13,
     fontWeight: '600',
     maxWidth: 200,
   },
   profileBadgeChange: {
-    color: '#7c3aed',
+    color: '#0284C7',
     fontSize: 12,
     fontWeight: '700',
     borderLeftWidth: 1,
-    borderLeftColor: 'rgba(124,58,237,0.3)',
+    borderLeftColor: 'rgba(2, 132, 199, 0.3)',
     paddingLeft: 8,
   },
   content: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 24,
+    paddingTop: 20,
     gap: 16,
   },
   // ── Scanner card ──
   scannerCard: {
-    backgroundColor: '#7c3aed',
+    backgroundColor: '#0F172A',
     borderRadius: 20,
-    paddingVertical: 36,
+    paddingVertical: 32,
     paddingHorizontal: 24,
     alignItems: 'center',
-    shadowColor: '#7c3aed',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
+    borderWidth: 1,
+    borderColor: 'rgba(2, 132, 199, 0.3)',
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
     shadowRadius: 16,
-    elevation: 10,
+    elevation: 6,
   },
-  scannerIcon: {
-    fontSize: 48,
-    marginBottom: 12,
+  scannerIconWrapper: {
+    width: 64,
+    height: 64,
+    borderRadius: 18,
+    backgroundColor: 'rgba(2, 132, 199, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(2, 132, 199, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
   },
   scannerTitle: {
-    fontSize: 22,
+    fontSize: 19,
     fontWeight: '800',
-    color: '#fff',
+    color: '#FFFFFF',
+    letterSpacing: 1.2,
     marginBottom: 6,
   },
   scannerHint: {
     fontSize: 13,
-    color: 'rgba(255,255,255,0.7)',
+    color: '#94A3B8',
     fontWeight: '500',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  scannerStatusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.25)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  scannerStatusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+  },
+  scannerStatusText: {
+    color: '#10B981',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
   },
   // ── Event card ──
   eventCard: {
-    backgroundColor: '#1e293b',
+    backgroundColor: '#0F172A',
     borderRadius: 18,
-    padding: 20,
+    padding: 18,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#1E293B',
   },
   eventCardHeader: {
     flexDirection: 'row',
@@ -375,17 +421,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 2,
   },
+  cardHeaderWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   eventCardTitle: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#64748b',
+    color: '#64748B',
     textTransform: 'uppercase',
     letterSpacing: 1,
-  },
-  refreshButton: {
-    color: '#475569',
-    fontSize: 20,
-    fontWeight: '600',
   },
   eventInfo: {
     marginTop: 10,
@@ -397,80 +442,74 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   activePulse: {
-    width: 8,
-    height: 8,
+    width: 7,
+    height: 7,
     borderRadius: 4,
-    backgroundColor: '#22c55e',
+    backgroundColor: '#10B981',
   },
   eventActiveLabel: {
-    color: '#22c55e',
+    color: '#10B981',
     fontSize: 11,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   eventName: {
-    fontSize: 19,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#f1f5f9',
-    marginBottom: 12,
+    color: '#F8FAFC',
+    marginBottom: 10,
   },
   eventRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
     marginBottom: 6,
-  },
-  eventEmoji: {
-    fontSize: 14,
   },
   eventValue: {
     fontSize: 13,
-    color: '#94a3b8',
+    color: '#94A3B8',
     flex: 1,
   },
   noEvent: {
-    marginTop: 16,
+    marginTop: 12,
     alignItems: 'center',
-    paddingVertical: 8,
-  },
-  noEventEmoji: {
-    fontSize: 32,
-    marginBottom: 8,
+    paddingVertical: 12,
   },
   noEventText: {
-    fontSize: 14,
-    color: '#64748b',
+    fontSize: 13,
+    color: '#64748B',
     fontWeight: '500',
     textAlign: 'center',
   },
   retryButton: {
     marginTop: 12,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(124,58,237,0.1)',
+    paddingVertical: 7,
+    backgroundColor: 'rgba(2, 132, 199, 0.1)',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(124,58,237,0.25)',
+    borderColor: 'rgba(2, 132, 199, 0.25)',
   },
   retryText: {
-    fontSize: 13,
-    color: '#7c3aed',
+    fontSize: 12,
+    color: '#0284C7',
     fontWeight: '600',
   },
   // ── Logout ──
   logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginHorizontal: 20,
-    marginBottom: 28,
-    paddingVertical: 14,
+    marginBottom: 24,
+    paddingVertical: 13,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.2)',
-    backgroundColor: 'rgba(239,68,68,0.05)',
-    alignItems: 'center',
+    borderColor: 'rgba(239, 68, 68, 0.2)',
+    backgroundColor: 'rgba(239, 68, 68, 0.05)',
   },
   logoutText: {
-    color: '#ef4444',
+    color: '#EF4444',
     fontSize: 14,
     fontWeight: '600',
   },

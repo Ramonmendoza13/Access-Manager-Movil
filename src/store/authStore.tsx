@@ -14,6 +14,7 @@ interface AuthState {
   role: string | null;
   profileId: string | null;
   profiles: ProfileSummary[];
+  scannerName: string | null;
 }
 
 interface AuthContextType extends AuthState {
@@ -22,7 +23,8 @@ interface AuthContextType extends AuthState {
     email: string,
     role: string,
     profileId?: number | string | null,
-    profiles?: ProfileSummary[]
+    profiles?: ProfileSummary[],
+    scannerName?: string | null
   ) => Promise<void>;
   switchProfile: (profileId: number | string) => Promise<void>;
   logout: () => Promise<void>;
@@ -37,14 +39,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     role: null,
     profileId: null,
     profiles: [],
+    scannerName: null,
   });
+
+  React.useEffect(() => {
+    const restoreSession = async () => {
+      try {
+        const token = await SecureStore.getItemAsync('auth_token');
+        const profileId = await SecureStore.getItemAsync('active_profile_id');
+        const scannerName = await SecureStore.getItemAsync('scanner_name');
+        if (token) {
+          setState((prev) => ({
+            ...prev,
+            token,
+            profileId,
+            scannerName,
+          }));
+        }
+      } catch (e) {
+        console.warn('Failed to restore session:', e);
+      }
+    };
+    restoreSession();
+  }, []);
 
   const login = async (
     token: string,
     email: string,
     role: string,
     profileId?: number | string | null,
-    profiles?: ProfileSummary[]
+    profiles?: ProfileSummary[],
+    scannerName?: string | null
   ) => {
     await SecureStore.setItemAsync('auth_token', token);
     const pIdStr = profileId ? String(profileId) : null;
@@ -53,12 +78,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       await SecureStore.deleteItemAsync('active_profile_id');
     }
+    if (scannerName) {
+      await SecureStore.setItemAsync('scanner_name', scannerName);
+    } else {
+      await SecureStore.deleteItemAsync('scanner_name');
+    }
     setState({
       token,
       email,
       role,
       profileId: pIdStr,
       profiles: profiles ?? [],
+      scannerName: scannerName ?? null,
     });
   };
 
@@ -71,7 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     await SecureStore.deleteItemAsync('auth_token');
     await SecureStore.deleteItemAsync('active_profile_id');
-    setState({ token: null, email: null, role: null, profileId: null, profiles: [] });
+    await SecureStore.deleteItemAsync('scanner_name');
+    setState({ token: null, email: null, role: null, profileId: null, profiles: [], scannerName: null });
   };
 
   return (

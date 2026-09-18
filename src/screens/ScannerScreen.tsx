@@ -5,15 +5,18 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
+  Platform,
 } from 'react-native';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import * as SecureStore from 'expo-secure-store';
 import * as Haptics from 'expo-haptics';
+import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import apiClient from '../api/client';
 import ScanResult from '../components/ScanResult';
 import type { RootStackParamList } from '../navigation/AppNavigator';
+import { useAuth } from '../store/authStore';
 
 interface ScanResponse {
   allowed: boolean;
@@ -103,7 +106,7 @@ interface ScanGuideProps {
 }
 
 function ScanGuide({ scanning }: ScanGuideProps) {
-  const cornerColor = scanning ? '#22c55e' : '#6b7280';
+  const cornerColor = scanning ? '#38BDF8' : '#64748B';
 
   return (
     <View style={styles.guideWrapper}>
@@ -120,6 +123,7 @@ function ScanGuide({ scanning }: ScanGuideProps) {
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function ScannerScreen() {
+  const { scannerName } = useAuth();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanning, setScanning] = useState(true);
   const [result, setResult] = useState<ScanResponse | null>(null);
@@ -185,9 +189,9 @@ export default function ScannerScreen() {
     return {
       inSeason,
       text: inSeason
-        ? `🏊 Temporada activa\n${profile.seasonStartDate} al ${profile.seasonEndDate}`
-        : '❌ Fuera de temporada',
-      color: inSeason ? '#22c55e' : '#ef4444',
+        ? `Temporada activa\n${profile.seasonStartDate} al ${profile.seasonEndDate}`
+        : 'Fuera de temporada',
+      color: inSeason ? '#10B981' : '#EF4444',
     };
   };
 
@@ -214,9 +218,11 @@ export default function ScannerScreen() {
           await SecureStore.setItemAsync('device_id', deviceId);
         }
 
+        const resolvedDeviceId = scannerName?.trim() || deviceId;
+
         const { data: scanResponse } = await apiClient.post<ScanResponse>(
           '/api/access/scan',
-          { qrCode: data, deviceId }
+          { qrCode: data, deviceId: resolvedDeviceId }
         );
 
         // Haptics BEFORE setResult so feedback syncs with visual appearance
@@ -261,13 +267,15 @@ export default function ScannerScreen() {
       <View style={styles.permissionContainer}>
         <StatusBar barStyle="light-content" />
         <View style={styles.permissionCard}>
-          <Text style={styles.permissionIcon}>📷</Text>
+          <View style={styles.permissionIconWrapper}>
+            <Feather name="camera" size={32} color="#0284C7" />
+          </View>
           <Text style={styles.permissionTitle}>Acceso a la cámara requerido</Text>
           <Text style={styles.permissionBody}>
-            Esta app necesita acceder a la cámara para escanear los códigos QR de las entradas.
+            Esta aplicación requiere acceso al hardware de la cámara para escanear y validar credenciales QR en tiempo real.
           </Text>
-          <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-            <Text style={styles.permissionButtonText}>Conceder permiso</Text>
+          <TouchableOpacity style={styles.permissionButton} onPress={requestPermission} activeOpacity={0.8}>
+            <Text style={styles.permissionButtonText}>Conceder acceso</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -301,24 +309,38 @@ export default function ScannerScreen() {
                 {poolStatus?.text}
               </Text>
             </View>
+            <View style={styles.scannerBadge}>
+              <Feather name="smartphone" size={10} color="#38BDF8" />
+              <Text style={styles.scannerBadgeText} numberOfLines={1}>
+                {scannerName || 'Scanner General'}
+              </Text>
+            </View>
           </View>
         </View>
       ) : (
         activeEvent && (
           <View style={styles.bannerContainer}>
             <View style={styles.bannerContent}>
-              <Text style={styles.eventName} numberOfLines={1}>
-                {activeEvent.name}
-              </Text>
-              <View style={styles.statusRow}>
-                <View
-                  style={[
-                    styles.statusDot,
-                    { backgroundColor: activeEvent.seasonPassEnabled ? '#22c55e' : '#ef4444' },
-                  ]}
-                />
-                <Text style={styles.statusText}>
-                  {activeEvent.seasonPassEnabled ? 'Abonos activos' : 'Abonos desactivados'}
+              <View style={{ flex: 1, marginRight: 6 }}>
+                <Text style={styles.eventName} numberOfLines={1}>
+                  {activeEvent.name}
+                </Text>
+                <View style={styles.statusRow}>
+                  <View
+                    style={[
+                      styles.statusDot,
+                      { backgroundColor: activeEvent.seasonPassEnabled ? '#10b981' : '#ef4444' },
+                    ]}
+                  />
+                  <Text style={styles.statusText}>
+                    {activeEvent.seasonPassEnabled ? 'Abonos activos' : 'Abonos desactivados'}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.scannerBadge}>
+                <Feather name="map-pin" size={10} color="#38BDF8" />
+                <Text style={styles.scannerBadgeText} numberOfLines={1}>
+                  {scannerName || 'Scanner General'}
                 </Text>
               </View>
             </View>
@@ -347,7 +369,8 @@ export default function ScannerScreen() {
         onPress={handleGoBack}
         activeOpacity={0.75}
       >
-        <Text style={styles.backText}>← Volver</Text>
+        <Feather name="arrow-left" size={14} color="#F8FAFC" style={{ marginRight: 6 }} />
+        <Text style={styles.backText}>Volver</Text>
       </TouchableOpacity>
 
       {/* Scan result full-screen overlay */}
@@ -368,47 +391,67 @@ const styles = StyleSheet.create({
   // ── Permission screen ──
   permissionContainer: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: '#090D16',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
   },
   permissionCard: {
-    backgroundColor: '#1e293b',
+    backgroundColor: '#0F172A',
     borderRadius: 20,
     padding: 32,
     alignItems: 'center',
     maxWidth: 360,
     width: '100%',
+    borderWidth: 1,
+    borderColor: '#1E293B',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 8,
   },
-  permissionIcon: {
-    fontSize: 48,
-    marginBottom: 16,
+  permissionIconWrapper: {
+    width: 64,
+    height: 64,
+    borderRadius: 18,
+    backgroundColor: 'rgba(2, 132, 199, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(2, 132, 199, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
   },
   permissionTitle: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '700',
-    color: '#f1f5f9',
+    color: '#F8FAFC',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   permissionBody: {
-    fontSize: 14,
-    color: '#94a3b8',
+    fontSize: 13,
+    color: '#94A3B8',
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 20,
     marginBottom: 24,
   },
   permissionButton: {
-    backgroundColor: '#7c3aed',
+    backgroundColor: '#0284C7',
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 32,
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
   permissionButtonText: {
     color: '#fff',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
+    letterSpacing: 0.3,
   },
 
   // ── Dark vignette overlay ──
@@ -422,7 +465,7 @@ const styles = StyleSheet.create({
   },
   topOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(9,13,22,0.65)',
   },
   middleRow: {
     flexDirection: 'row',
@@ -430,7 +473,7 @@ const styles = StyleSheet.create({
   },
   sideOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(9,13,22,0.65)',
   },
   // The center is transparent — no background
   scanZone: {
@@ -439,7 +482,7 @@ const styles = StyleSheet.create({
   },
   bottomOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(9,13,22,0.65)',
   },
 
   // ── Scan guide ──
@@ -457,12 +500,12 @@ const styles = StyleSheet.create({
     height: GUIDE_SIZE,
   },
   guideHint: {
-    marginTop: 18,
-    color: '#fff',
+    marginTop: 20,
+    color: '#F8FAFC',
     fontSize: 13,
-    fontWeight: '500',
-    letterSpacing: 0.4,
-    textShadowColor: 'rgba(0,0,0,0.6)',
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0,0,0,0.8)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
@@ -479,15 +522,18 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 52,
     left: 20,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: '#1E293B',
+    zIndex: 20,
   },
   backText: {
-    color: '#fff',
+    color: '#F8FAFC',
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: 0.3,
@@ -498,12 +544,12 @@ const styles = StyleSheet.create({
     top: 52,
     right: 20,
     left: 120, // Evita colisión con el botón de volver (left: 20)
-    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: '#1E293B',
     justifyContent: 'center',
     zIndex: 10,
   },
@@ -533,5 +579,23 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 9,
     fontWeight: '500',
+  },
+  scannerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.3)',
+    gap: 3,
+    maxWidth: 130,
+  },
+  scannerBadgeText: {
+    color: '#38BDF8',
+    fontSize: 9,
+    fontWeight: '700',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
 });

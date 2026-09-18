@@ -7,9 +7,12 @@ import {
   StyleSheet,
   SafeAreaView,
   StatusBar,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Feather, Ionicons } from '@expo/vector-icons';
+import Logo from '../components/Logo';
 import { useAuth } from '../store/authStore';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
@@ -39,17 +42,15 @@ export default function ProfileSelectorScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.logoBadge}>
-          <Text style={styles.logoText}>AM</Text>
-        </View>
+        <Logo size={32} />
         <View style={styles.headerInfo}>
-          <Text style={styles.headerTitle}>Selecciona perfil</Text>
+          <Text style={styles.headerTitle}>Seleccionar Perfil</Text>
           <Text style={styles.headerSub} numberOfLines={1}>{email}</Text>
         </View>
       </View>
 
       <Text style={styles.sectionLabel}>
-        {profiles.length} {profiles.length === 1 ? 'perfil disponible' : 'perfiles disponibles'}
+        {profiles.length} {profiles.length === 1 ? 'PERFIL DISPONIBLE' : 'PERFILES DISPONIBLES'}
       </Text>
 
       <FlatList
@@ -77,23 +78,37 @@ export default function ProfileSelectorScreen() {
                   {item.teamName}
                 </Text>
                 {item.venue ? (
-                  <Text style={styles.profileVenue} numberOfLines={1}>
-                    📍 {item.venue}
-                  </Text>
+                  <View style={styles.venueRow}>
+                    <Feather name="map-pin" size={11} color="#64748B" style={{ marginRight: 4 }} />
+                    <Text style={styles.profileVenue} numberOfLines={1}>
+                      {item.venue}
+                    </Text>
+                  </View>
                 ) : null}
-                <Text style={styles.profileType}>
-                  {item.systemType === 'SWIMMING_POOL' ? '🏊 Piscina' : '⚽ Club Deportivo'}
-                </Text>
+                <View style={styles.typeRow}>
+                  {item.systemType === 'SWIMMING_POOL' ? (
+                    <>
+                      <Ionicons name="water-outline" size={12} color="#0EA5E9" style={{ marginRight: 4 }} />
+                      <Text style={[styles.profileType, { color: '#0EA5E9' }]}>Piscina</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Ionicons name="football-outline" size={12} color="#64748B" style={{ marginRight: 4 }} />
+                      <Text style={styles.profileType}>Club Deportivo</Text>
+                    </>
+                  )}
+                </View>
               </View>
 
               {/* Indicator */}
               {isActive ? (
                 <View style={styles.activeBadge}>
+                  <View style={styles.activeDot} />
                   <Text style={styles.activeBadgeText}>Activo</Text>
                 </View>
               ) : (
                 <View style={styles.arrowContainer}>
-                  <Text style={styles.arrowText}>›</Text>
+                  <Feather name="chevron-right" size={18} color="#475569" />
                 </View>
               )}
             </TouchableOpacity>
@@ -113,7 +128,8 @@ export default function ProfileSelectorScreen() {
           onPress={() => navigation.goBack()}
           activeOpacity={0.8}
         >
-          <Text style={styles.backButtonText}>← Volver al panel</Text>
+          <Feather name="arrow-left" size={16} color="#94A3B8" style={{ marginRight: 6 }} />
+          <Text style={styles.backButtonText}>Volver al panel</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -121,6 +137,7 @@ export default function ProfileSelectorScreen() {
           onPress={logout}
           activeOpacity={0.8}
         >
+          <Feather name="log-out" size={16} color="#EF4444" style={{ marginRight: 6 }} />
           <Text style={styles.logoutText}>Cerrar sesión</Text>
         </TouchableOpacity>
       </View>
@@ -131,7 +148,7 @@ export default function ProfileSelectorScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: '#090D16',
   },
   header: {
     flexDirection: 'row',
@@ -141,40 +158,38 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1e293b',
+    borderBottomColor: '#1E293B',
   },
   logoBadge: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
     borderRadius: 12,
-    backgroundColor: '#7c3aed',
+    backgroundColor: 'rgba(2, 132, 199, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(2, 132, 199, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  logoText: {
-    color: '#fff',
-    fontWeight: '800',
-    fontSize: 14,
   },
   headerInfo: {
     flex: 1,
   },
   headerTitle: {
-    color: '#f1f5f9',
-    fontSize: 18,
+    color: '#F8FAFC',
+    fontSize: 17,
     fontWeight: '700',
+    letterSpacing: 0.3,
   },
   headerSub: {
-    color: '#64748b',
+    color: '#64748B',
     fontSize: 12,
     marginTop: 2,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   sectionLabel: {
-    color: '#64748b',
-    fontSize: 11,
+    color: '#64748B',
+    fontSize: 10,
     fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.2,
     marginHorizontal: 20,
     marginTop: 20,
     marginBottom: 10,
@@ -187,31 +202,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    backgroundColor: '#1e293b',
+    backgroundColor: '#0F172A',
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#1E293B',
   },
   profileCardActive: {
-    borderColor: '#7c3aed',
-    backgroundColor: 'rgba(124,58,237,0.12)',
+    borderColor: '#0284C7',
+    backgroundColor: 'rgba(2, 132, 199, 0.08)',
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: '#334155',
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    backgroundColor: '#1E293B',
+    borderWidth: 1,
+    borderColor: '#334155',
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarActive: {
-    backgroundColor: '#7c3aed',
+    backgroundColor: '#0284C7',
+    borderColor: '#0284C7',
   },
   avatarText: {
-    color: '#94a3b8',
+    color: '#94A3B8',
     fontWeight: '700',
-    fontSize: 16,
+    fontSize: 15,
   },
   avatarTextActive: {
     color: '#fff',
@@ -220,43 +238,57 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileName: {
-    color: '#e2e8f0',
+    color: '#E2E8F0',
     fontSize: 15,
     fontWeight: '600',
-    marginBottom: 2,
+    marginBottom: 3,
   },
   profileNameActive: {
-    color: '#fff',
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  venueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 3,
   },
   profileVenue: {
-    color: '#64748b',
+    color: '#94A3B8',
     fontSize: 12,
-    marginBottom: 2,
+  },
+  typeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   profileType: {
-    color: '#475569',
+    color: '#64748B',
     fontSize: 11,
+    fontWeight: '500',
   },
   activeBadge: {
-    backgroundColor: 'rgba(124,58,237,0.25)',
-    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(2, 132, 199, 0.15)',
+    paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(124,58,237,0.4)',
+    borderColor: 'rgba(2, 132, 199, 0.3)',
+  },
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#38BDF8',
   },
   activeBadgeText: {
-    color: '#a78bfa',
+    color: '#38BDF8',
     fontSize: 11,
     fontWeight: '700',
   },
   arrowContainer: {
     paddingHorizontal: 4,
-  },
-  arrowText: {
-    color: '#334155',
-    fontSize: 22,
-    fontWeight: '300',
   },
   emptyContainer: {
     alignItems: 'center',
@@ -271,30 +303,35 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     gap: 10,
     borderTopWidth: 1,
-    borderTopColor: '#1e293b',
+    borderTopColor: '#1E293B',
   },
   backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#334155',
-    alignItems: 'center',
+    borderColor: '#1E293B',
+    backgroundColor: '#0F172A',
   },
   backButtonText: {
-    color: '#94a3b8',
+    color: '#94A3B8',
     fontSize: 14,
     fontWeight: '600',
   },
   logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: 'rgba(239,68,68,0.08)',
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.2)',
-    alignItems: 'center',
+    borderColor: 'rgba(239, 68, 68, 0.2)',
   },
   logoutText: {
-    color: '#ef4444',
+    color: '#EF4444',
     fontSize: 14,
     fontWeight: '600',
   },

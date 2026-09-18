@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Animated, View, Text, StyleSheet } from 'react-native';
+import { Feather, Ionicons } from '@expo/vector-icons';
 
 interface ScanResultProps {
   result: {
@@ -51,7 +52,7 @@ export default function ScanResult({ result }: ScanResultProps) {
   }, []);
 
   // ── 3. Pulse animation for denied state ──────────────────────────────────
-  const pulseAnim = useRef(new Animated.Value(0.85)).current;
+  const pulseAnim = useRef(new Animated.Value(0.9)).current;
 
   useEffect(() => {
     if (allowed) return; // only pulse on denied
@@ -64,7 +65,7 @@ export default function ScanResult({ result }: ScanResultProps) {
           useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
-          toValue: 0.85,
+          toValue: 0.9,
           duration: 300,
           useNativeDriver: true,
         }),
@@ -76,114 +77,115 @@ export default function ScanResult({ result }: ScanResultProps) {
     };
   }, [allowed, pulseAnim]);
 
-  // ── Render ────────────────────────────────────────────────────────────────
-  let bgColor = 'rgba(239,68,68,0.88)'; // default denied rojo
-  let icon = '✗';
+  // ── Configure state data & icons ──────────────────────────────────────────
+  let bgOverlay = 'rgba(239, 68, 68, 0.92)'; // Default red denied
+  let themeColor = '#EF4444';
   let title = '';
   let subtitle = '';
-  let showBadge = false;
-  let titleColor: string | null = null;
-  let subtitleColor: string | null = null;
+  let iconElement: React.ReactNode = <Feather name="x" size={48} color="#FFFFFF" />;
 
   if (allowed) {
     if (isSeasonPass) {
-      bgColor = 'rgba(26, 35, 126, 0.92)'; // #1a237e semi-transparente
-      icon = '🎫';
-      title = 'ABONADO';
-      titleColor = '#facc15'; // amarillo
-      subtitle = ticketType; // ej: "Abonado nº 7"
-      subtitleColor = '#ffffff'; // blanco
+      bgOverlay = 'rgba(2, 132, 199, 0.94)'; // Sky/Cobalt blue
+      themeColor = '#38BDF8';
+      title = 'ABONADO VALIDADO';
+      subtitle = ticketType || 'Pase de temporada';
+      iconElement = <Feather name="user-check" size={48} color="#FFFFFF" />;
     } else {
-      bgColor = 'rgba(34,197,94,0.92)'; // verde
-      icon = '✓';
+      bgOverlay = 'rgba(16, 185, 129, 0.94)'; // Emerald green
+      themeColor = '#10B981';
       title = 'ACCESO PERMITIDO';
-      subtitle = holderName;
+      subtitle = holderName || 'Entrada válida';
+      iconElement = <Feather name="check" size={54} color="#FFFFFF" />;
     }
   } else if (message && message.includes('no están habilitados')) {
-    bgColor = 'rgba(51, 65, 85, 0.92)'; // gris oscuro
-    icon = '🚫';
+    bgOverlay = 'rgba(30, 41, 59, 0.96)';
+    themeColor = '#94A3B8';
     title = 'ABONOS DESACTIVADOS';
-    subtitle = 'Este evento no admite abonos';
+    subtitle = 'Este evento no admite pases de abonado';
+    iconElement = <Feather name="slash" size={48} color="#FFFFFF" />;
   } else if (message && message.includes('ya utilizado hoy')) {
-    bgColor = 'rgba(249,115,22,0.92)'; // naranja
-    icon = '⏰';
-    title = 'ABONO YA USADO HOY';
-    subtitle = 'Este abonado ya ha entrado hoy';
+    bgOverlay = 'rgba(217, 119, 6, 0.94)'; // Amber
+    themeColor = '#F59E0B';
+    title = 'ABONO YA UTILIZADO HOY';
+    subtitle = 'Este abonado ya ha registrado su entrada';
+    iconElement = <Feather name="clock" size={48} color="#FFFFFF" />;
   } else if (message && message.includes('no es válido para este evento')) {
-    bgColor = 'rgba(127,29,29,0.92)'; // rojo oscuro
-    icon = '🚫';
+    bgOverlay = 'rgba(185, 28, 28, 0.94)';
+    themeColor = '#EF4444';
     title = 'ABONO NO HABILITADO';
     subtitle = 'Los abonos están desactivados para este evento';
+    iconElement = <Feather name="alert-triangle" size={48} color="#FFFFFF" />;
   } else if (message && message.includes('ya utilizada')) {
-    bgColor = 'rgba(220,38,38,0.92)'; // rojo
-    icon = '✗';
+    bgOverlay = 'rgba(220, 38, 38, 0.94)';
+    themeColor = '#EF4444';
     title = 'ENTRADA YA USADA';
+    subtitle = 'Este ticket ya fue registrado previamente';
+    iconElement = <Feather name="x-circle" size={48} color="#FFFFFF" />;
   } else if (message === 'Fuera de temporada') {
-    bgColor = '#0D47A1'; // Azul oscuro
-    icon = '❄️';
+    bgOverlay = 'rgba(2, 132, 199, 0.94)';
+    themeColor = '#38BDF8';
     title = 'FUERA DE TEMPORADA';
-    subtitle = 'La piscina no está en temporada activa';
+    subtitle = 'La instalación no está en período activo';
+    iconElement = <Ionicons name="water-outline" size={48} color="#FFFFFF" />;
   } else if (message && message.includes('no es válida para hoy')) {
-    bgColor = 'rgba(249,115,22,0.92)'; // Naranja
-    icon = '📅';
+    bgOverlay = 'rgba(217, 119, 6, 0.94)';
+    themeColor = '#F59E0B';
     title = 'ENTRADA NO VÁLIDA HOY';
-    subtitle = 'Esta entrada es para otro día';
+    subtitle = 'Este ticket está fechado para otro día';
+    iconElement = <Feather name="calendar" size={48} color="#FFFFFF" />;
   } else if (message === 'Sin perfil configurado') {
-    bgColor = 'rgba(100, 116, 139, 0.92)'; // Gris
-    icon = '⚙️';
-    title = 'SIN CONFIGURAR';
+    bgOverlay = 'rgba(51, 65, 85, 0.94)';
+    themeColor = '#94A3B8';
+    title = 'SIN PERFIL CONFIGURADO';
     subtitle = 'Configura el perfil del club en el panel web';
+    iconElement = <Feather name="settings" size={48} color="#FFFFFF" />;
   } else {
-    // Cualquier otro denied
-    bgColor = 'rgba(220,38,38,0.92)'; // rojo
-    icon = '✗';
-    title = message;
+    bgOverlay = 'rgba(220, 38, 38, 0.94)';
+    themeColor = '#EF4444';
+    title = message || 'ACCESO DENEGADO';
+    subtitle = 'Credencial no autorizada';
+    iconElement = <Feather name="x" size={48} color="#FFFFFF" />;
   }
 
   return (
-    // Outer Animated.View: controls fade-in opacity
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      {/*
-        Inner Animated.View: controls pulse opacity on denied.
-        On allowed it stays at opacity=1 (no animation applied).
-      */}
+      {/* Background with pulse on denied */}
       <Animated.View
         style={[
           styles.background,
-          { backgroundColor: bgColor },
+          { backgroundColor: bgOverlay },
           !allowed && { opacity: pulseAnim },
         ]}
       />
 
       {/* Countdown badge — top right */}
       <View style={styles.countdownBadge}>
-        <Text style={styles.countdownText}>{Math.ceil(countdown / 10)}</Text>
+        <Text style={styles.countdownText}>{Math.ceil(countdown / 10)}s</Text>
       </View>
 
-      {/* Central content */}
-      <Text style={styles.icon}>{icon}</Text>
-      <Text style={[styles.primaryText, titleColor ? { color: titleColor } : null]}>
-        {title}
-      </Text>
-      {!!subtitle && (
-        <Text style={[styles.secondaryText, subtitleColor ? { color: subtitleColor, textTransform: 'none' } : null]}>
-          {subtitle}
-        </Text>
-      )}
-      {allowed && isSeasonPass && !!holderName && (
-        <Text style={styles.holderText}>{holderName}</Text>
-      )}
-      {showBadge && (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>🎫 ABONO</Text>
+      {/* Center Tactical Card */}
+      <View style={styles.hudCard}>
+        <View style={[styles.iconCircle, { borderColor: themeColor }]}>
+          {iconElement}
         </View>
-      )}
+
+        <Text style={styles.primaryText}>{title}</Text>
+
+        {!!subtitle && <Text style={styles.secondaryText}>{subtitle}</Text>}
+
+        {allowed && isSeasonPass && !!holderName && (
+          <View style={styles.holderBox}>
+            <Feather name="user" size={13} color="#94A3B8" style={{ marginRight: 6 }} />
+            <Text style={styles.holderText}>{holderName}</Text>
+          </View>
+        )}
+      </View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  // ── Outer container: covers the whole screen, handles fade-in ──
   container: {
     position: 'absolute',
     top: 0,
@@ -192,9 +194,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
+    zIndex: 100,
   },
-  // ── Background layer: handles pulse (behind content) ──
   background: {
     position: 'absolute',
     top: 0,
@@ -202,75 +204,82 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  // ── Countdown badge ──
   countdownBadge: {
     position: 'absolute',
-    top: 56,
-    right: 24,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0,0,0,0.30)',
+    top: 52,
+    right: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   countdownText: {
-    color: '#fff',
-    fontSize: 15,
+    color: '#FFFFFF',
+    fontSize: 13,
     fontWeight: '700',
+    fontFamily: 'monospace',
   },
-  // ── Central icon ──
-  icon: {
-    fontSize: 80,
-    color: '#fff',
-    fontWeight: '900',
-    marginBottom: 16,
-    lineHeight: 96,
-    textShadowColor: 'rgba(0,0,0,0.2)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+  hudCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: 'rgba(9, 13, 22, 0.92)',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    paddingVertical: 36,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.5,
+    shadowRadius: 30,
+    elevation: 12,
+  },
+  iconCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    borderWidth: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
   },
   primaryText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
-    color: '#fff',
+    color: '#FFFFFF',
     textAlign: 'center',
+    letterSpacing: 0.8,
     marginBottom: 8,
-    textShadowColor: 'rgba(0,0,0,0.15)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
   },
   secondaryText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.85)',
+    color: 'rgba(248, 250, 252, 0.8)',
     textAlign: 'center',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+    lineHeight: 20,
   },
-  badge: {
+  holderBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2563eb', // badge azul
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginTop: 12,
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   holderText: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#cbd5e1', // slate-300 (gris claro)
-    textAlign: 'center',
-    marginTop: 8,
-    textShadowColor: 'rgba(0,0,0,0.15)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    color: '#E2E8F0',
+    letterSpacing: 0.4,
   },
 });

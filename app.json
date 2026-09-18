@@ -7,6 +7,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "android": {
+      "package": "com.accessmanager.scanner",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -30,6 +31,11 @@
     "plugins": [
       "expo-secure-store",
       "expo-status-bar"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "03bfe0e4-0ae7-4d8f-9398-c78c4dbb89a9"
+      }
+    }
   }
 }

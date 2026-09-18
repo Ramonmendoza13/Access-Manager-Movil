@@ -9,6 +9,8 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import Logo from '../components/Logo';
 import apiClient from '../api/client';
 import { useAuth, type ProfileSummary } from '../store/authStore';
 
@@ -18,6 +20,7 @@ interface StaffLoginResponse {
   role: string;
   clubProfileId?: number;
   clubProfileName?: string;
+  scannerName?: string | null;
 }
 
 interface OwnerLoginResponse {
@@ -71,7 +74,7 @@ export default function LoginScreen() {
         email: email.trim(),
         password,
       });
-      await login(data.token, data.email, data.role, data.clubProfileId);
+      await login(data.token, data.email, data.role, data.clubProfileId, undefined, data.scannerName);
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string } }; message?: string };
       const msg =
@@ -91,39 +94,48 @@ export default function LoginScreen() {
     >
       <View style={styles.card}>
         <View style={styles.logoRow}>
-          <View style={styles.logoBadge}>
-            <Text style={styles.logoText}>AM</Text>
-          </View>
+          <Logo size={56} />
         </View>
-        <Text style={styles.title}>Access Scanner</Text>
-        <Text style={styles.subtitle}>Inicia sesión para continuar</Text>
+        <Text style={styles.title}>ACCESS MANAGER</Text>
+        <Text style={styles.subtitle}>Terminal de Control de Accesos</Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor="#6b7280"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          autoCorrect={false}
-          returnKeyType="next"
-          editable={!loading}
-        />
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>CORREO ELECTRÓNICO</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="usuario@ejemplo.com"
+            placeholderTextColor="#475569"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoCorrect={false}
+            returnKeyType="next"
+            editable={!loading}
+          />
+        </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Contraseña"
-          placeholderTextColor="#6b7280"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          returnKeyType="done"
-          onSubmitEditing={handleLogin}
-          editable={!loading}
-        />
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>CONTRASEÑA</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="••••••••"
+            placeholderTextColor="#475569"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            returnKeyType="done"
+            onSubmitEditing={handleLogin}
+            editable={!loading}
+          />
+        </View>
 
-        {error && <Text style={styles.errorText}>{error}</Text>}
+        {error && (
+          <View style={styles.errorContainer}>
+            <Feather name="alert-circle" size={16} color="#ef4444" style={styles.errorIcon} />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
 
         <TouchableOpacity
           style={[styles.button, loading && styles.buttonDisabled]}
@@ -134,7 +146,10 @@ export default function LoginScreen() {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Iniciar sesión</Text>
+            <View style={styles.buttonContent}>
+              <Text style={styles.buttonText}>Acceder al terminal</Text>
+              <Feather name="arrow-right" size={18} color="#fff" />
+            </View>
           )}
         </TouchableOpacity>
       </View>
@@ -145,7 +160,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: '#090D16',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -153,75 +168,110 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 400,
-    backgroundColor: '#1e293b',
+    backgroundColor: '#0F172A',
     borderRadius: 20,
     padding: 28,
+    borderWidth: 1,
+    borderColor: '#1E293B',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    elevation: 10,
   },
   logoRow: {
     alignItems: 'center',
     marginBottom: 16,
   },
   logoBadge: {
-    width: 48,
-    height: 48,
+    width: 52,
+    height: 52,
     borderRadius: 14,
-    backgroundColor: '#7c3aed',
+    backgroundColor: 'rgba(2, 132, 199, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(2, 132, 199, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoText: {
-    color: '#fff',
-    fontWeight: '800',
-    fontSize: 18,
-  },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
-    color: '#f1f5f9',
+    color: '#F8FAFC',
     textAlign: 'center',
+    letterSpacing: 1.2,
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#94a3b8',
+    fontSize: 13,
+    color: '#64748B',
     textAlign: 'center',
     marginBottom: 28,
+    fontWeight: '500',
+  },
+  inputWrapper: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#64748B',
+    letterSpacing: 1,
+    marginBottom: 6,
   },
   input: {
-    backgroundColor: '#0f172a',
+    backgroundColor: '#090D16',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: '#f1f5f9',
+    color: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#334155',
-    marginBottom: 14,
+    borderColor: '#1E293B',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.25)',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 16,
+  },
+  errorIcon: {
+    marginRight: 8,
   },
   errorText: {
-    color: '#f87171',
-    fontSize: 13,
-    marginBottom: 14,
-    textAlign: 'center',
+    color: '#F87171',
+    fontSize: 12,
+    flex: 1,
+    fontWeight: '500',
   },
   button: {
-    backgroundColor: '#7c3aed',
+    backgroundColor: '#0284C7',
     borderRadius: 12,
     paddingVertical: 15,
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 6,
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
+    letterSpacing: 0.3,
   },
 });
