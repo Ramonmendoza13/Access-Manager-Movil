@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -123,15 +123,18 @@ function ScanGuide({ scanning }: ScanGuideProps) {
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function ScannerScreen() {
-  const { scannerName } = useAuth();
+  const { scannerName, profileId } = useAuth();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanning, setScanning] = useState(true);
+  const isProcessingRef = useRef(false);
+  const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [result, setResult] = useState<ScanResponse | null>(null);
   const [activeEvent, setActiveEvent] = useState<ActiveEvent | null>(null);
   const [profile, setProfile] = useState<ClubProfile | null>(null);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
+  // Refetch when profileId changes (reaction to profile switch or logout)
   useEffect(() => {
     let isMounted = true;
 
@@ -170,10 +173,19 @@ export default function ScannerScreen() {
       fetchProfile();
     }, 120000); // Polling cada 2 min — reduce carga en BD un 75% sin impacto en UX
 
-
     return () => {
       isMounted = false;
       clearInterval(interval);
+    };
+  }, [profileId]);
+
+  // Clean up any pending scanner reset timer on unmount
+  useEffect(() => {
+    return () => {
+      if (resetTimeoutRef.current) {
+        clearTimeout(resetTimeoutRef.current);
+      }
+      isProcessingRef.current = false;
     };
   }, []);
 
@@ -198,13 +210,20 @@ export default function ScannerScreen() {
   const poolStatus = getPoolStatus();
 
   const handleGoBack = useCallback(() => {
+    if (resetTimeoutRef.current) {
+      clearTimeout(resetTimeoutRef.current);
+    }
+    isProcessingRef.current = false;
     navigation.goBack();
   }, [navigation]);
 
   const onBarcodeScanned = useCallback(
     async (scanResult: BarcodeScanningResult) => {
       const { data } = scanResult;
-      if (!scanning) return;
+      // Synchronous mutual exclusion check:
+      // Prevents rapid-fire camera callbacks from invoking the scan API concurrently
+      if (isProcessingRef.current || !scanning) return;
+      isProcessingRef.current = true;
       setScanning(false);
 
       // Haptic on scan detection
@@ -245,15 +264,19 @@ export default function ScannerScreen() {
             axiosErr?.message ||
             'Error de conexión con el servidor',
         });
+      } finally {
+        // Auto-reset after 2500ms regardless of success or failure
+        if (resetTimeoutRef.current) {
+          clearTimeout(resetTimeoutRef.current);
+        }
+        resetTimeoutRef.current = setTimeout(() => {
+          setResult(null);
+          isProcessingRef.current = false;
+          setScanning(true);
+        }, 2500);
       }
-
-      // Auto-reset after 2500ms
-      setTimeout(() => {
-        setResult(null);
-        setScanning(true);
-      }, 2500);
     },
-    [scanning]
+    [scanning, scannerName]
   );
 
   // ── Permission not yet determined ──

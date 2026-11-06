@@ -30,7 +30,6 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# Env (NUNCA al repo — usa .env.example como plantilla)
 .env
 .env.local
 
