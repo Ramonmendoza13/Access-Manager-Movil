@@ -30,8 +30,17 @@ yarn-error.*
 .DS_Store
 *.pem
 
+# Env (NUNCA al repo - ver AGENTS.md regla EAS)
 .env
-.env.local
+.env.*
+*.env
+*.env.*
+!.env*.example
+!*.env.example
+
+# Test & seed artifacts
+results/
+data/*.json
 
 # TypeScript
 *.tsbuildinfo
