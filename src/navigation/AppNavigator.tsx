@@ -17,28 +17,38 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
-  const { token } = useAuth();
+  const { token, role, profileId, profiles } = useAuth();
+  const needsProfileSelection =
+    Boolean(token) && role === 'OWNER' && !profileId && profiles.length > 1;
 
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {token ? (
-          <>
-            <Stack.Screen
-              name="Home"
-              component={HomeScreen}
-              options={{ headerLeft: () => null, gestureEnabled: false }}
-            />
-            <Stack.Screen name="Scanner" component={ScannerScreen} />
+          needsProfileSelection ? (
             <Stack.Screen
               name="ProfileSelector"
               component={ProfileSelectorScreen}
-              options={{
-                animation: 'slide_from_bottom',
-                presentation: 'modal',
-              }}
+              options={{ headerLeft: () => null, gestureEnabled: false }}
             />
-          </>
+          ) : (
+            <>
+              <Stack.Screen
+                name="Home"
+                component={HomeScreen}
+                options={{ headerLeft: () => null, gestureEnabled: false }}
+              />
+              <Stack.Screen name="Scanner" component={ScannerScreen} />
+              <Stack.Screen
+                name="ProfileSelector"
+                component={ProfileSelectorScreen}
+                options={{
+                  animation: 'slide_from_bottom',
+                  presentation: 'modal',
+                }}
+              />
+            </>
+          )
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} />
         )}

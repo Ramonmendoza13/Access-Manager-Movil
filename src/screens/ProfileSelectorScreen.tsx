@@ -24,8 +24,9 @@ export default function ProfileSelectorScreen() {
 
   const handleSelect = async (id: number) => {
     await switchProfile(id);
-    // Navigate back to Home — Home will refetch active event with new profile header
-    navigation.replace('Home');
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    }
   };
 
   const getInitials = (name: string) =>
@@ -123,14 +124,16 @@ export default function ProfileSelectorScreen() {
 
       {/* Footer actions */}
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.8}
-        >
-          <Feather name="arrow-left" size={16} color="#94A3B8" style={{ marginRight: 6 }} />
-          <Text style={styles.backButtonText}>Volver al panel</Text>
-        </TouchableOpacity>
+        {profileId ? (
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.8}
+          >
+            <Feather name="arrow-left" size={16} color="#94A3B8" style={{ marginRight: 6 }} />
+            <Text style={styles.backButtonText}>Volver al panel</Text>
+          </TouchableOpacity>
+        ) : null}
 
         <TouchableOpacity
           style={styles.logoutButton}

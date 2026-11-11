@@ -138,6 +138,14 @@ export default function ScannerScreen() {
   useEffect(() => {
     let isMounted = true;
 
+    if (!profileId) {
+      setActiveEvent(null);
+      setProfile(null);
+      return () => {
+        isMounted = false;
+      };
+    }
+
     const fetchActiveEvent = async () => {
       try {
         const response = await apiClient.get<ActiveEvent>('/api/events/active');
@@ -223,6 +231,15 @@ export default function ScannerScreen() {
       // Synchronous mutual exclusion check:
       // Prevents rapid-fire camera callbacks from invoking the scan API concurrently
       if (isProcessingRef.current || !scanning) return;
+      if (!profileId) {
+        setResult({
+          allowed: false,
+          holderName: '',
+          ticketType: '',
+          message: 'No hay ningún perfil activo seleccionado.',
+        });
+        return;
+      }
       isProcessingRef.current = true;
       setScanning(false);
 
@@ -276,7 +293,7 @@ export default function ScannerScreen() {
         }, 2500);
       }
     },
-    [scanning, scannerName]
+    [scanning, scannerName, profileId]
   );
 
   // ── Permission not yet determined ──

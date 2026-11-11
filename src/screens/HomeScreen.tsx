@@ -33,7 +33,7 @@ interface ClubProfile {
 }
 
 export default function HomeScreen() {
-  const { email, logout, profileId, profiles } = useAuth();
+  const { email, logout, profileId, profiles, syncProfiles } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [event, setEvent] = useState<ActiveEvent | null>(null);
@@ -41,7 +41,15 @@ export default function HomeScreen() {
   const [eventError, setEventError] = useState(false);
   const [clubProfile, setClubProfile] = useState<ClubProfile | null>(null);
 
+  const hasActiveProfile = Boolean(profileId);
+
   const fetchActiveEvent = useCallback(async () => {
+    if (!profileId) {
+      setEvent(null);
+      setEventError(false);
+      setEventLoading(false);
+      return;
+    }
     setEventLoading(true);
     setEventError(false);
     try {
@@ -53,16 +61,20 @@ export default function HomeScreen() {
     } finally {
       setEventLoading(false);
     }
-  }, []);
+  }, [profileId]);
 
   const fetchProfile = useCallback(async () => {
+    if (!profileId) {
+      setClubProfile(null);
+      return;
+    }
     try {
       const { data } = await apiClient.get<ClubProfile>('/api/profile');
       setClubProfile(data);
     } catch {
       // silently ignore — optional info
     }
-  }, []);
+  }, [profileId]);
 
   // Refetch whenever screen comes into focus (e.g. after profile switch)
   useFocusEffect(
@@ -79,13 +91,14 @@ export default function HomeScreen() {
   }, [profileId, fetchActiveEvent, fetchProfile]);
 
   // Resolve active profile name for display
-  const activeProfileName =
-    clubProfile?.teamName ||
-    profiles.find((p) => String(p.id) === profileId)?.teamName ||
-    'Perfil';
+  const activeProfileName = hasActiveProfile
+    ? clubProfile?.teamName ||
+      profiles.find((p) => String(p.id) === profileId)?.teamName ||
+      'Perfil'
+    : 'Sin perfil activo';
 
   const isOwnerWithMultipleProfiles = profiles.length > 1;
-  const isSwimmingPool = clubProfile?.systemType === 'SWIMMING_POOL';
+  const isSwimmingPool = hasActiveProfile && clubProfile?.systemType === 'SWIMMING_POOL';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -116,7 +129,12 @@ export default function HomeScreen() {
       {/* Active Profile Badge */}
       <View style={styles.profileBadgeRow}>
         <View style={styles.profileBadge}>
-          <View style={styles.profileBadgeDot} />
+          <View
+            style={[
+              styles.profileBadgeDot,
+              !hasActiveProfile && { backgroundColor: '#F59E0B' },
+            ]}
+          />
           <Text style={styles.profileBadgeName} numberOfLines={1}>
             {activeProfileName}
           </Text>
@@ -125,7 +143,9 @@ export default function HomeScreen() {
               onPress={() => navigation.navigate('ProfileSelector')}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={styles.profileBadgeChange}>Cambiar</Text>
+              <Text style={styles.profileBadgeChange}>
+                {hasActiveProfile ? 'Cambiar' : 'Seleccionar'}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -136,24 +156,77 @@ export default function HomeScreen() {
 
         {/* Scanner card */}
         <TouchableOpacity
-          style={styles.scannerCard}
+          style={[styles.scannerCard, !hasActiveProfile && styles.scannerCardDisabled]}
           activeOpacity={0.85}
-          onPress={() => navigation.navigate('Scanner')}
+          disabled={!hasActiveProfile}
+          onPress={() => {
+            if (hasActiveProfile) {
+              navigation.navigate('Scanner');
+            }
+          }}
         >
           <View style={styles.scannerIconWrapper}>
-            <Feather name="maximize" size={32} color="#38BDF8" />
+            <Feather
+              name="maximize"
+              size={32}
+              color={hasActiveProfile ? '#38BDF8' : '#64748B'}
+            />
           </View>
           <Text style={styles.scannerTitle}>ABRIR SCANNER</Text>
-          <Text style={styles.scannerHint}>Toca para activar la cámara y validar entradas QR</Text>
+          <Text style={styles.scannerHint}>
+            {hasActiveProfile
+              ? 'Toca para activar la cámara y validar entradas QR'
+              : 'Requiere un perfil activo seleccionado para validar entradas'}
+          </Text>
           
-          <View style={styles.scannerStatusPill}>
-            <View style={styles.scannerStatusDot} />
-            <Text style={styles.scannerStatusText}>TERMINAL ACTIVO</Text>
+          <View
+            style={[
+              styles.scannerStatusPill,
+              !hasActiveProfile && styles.scannerStatusPillWarning,
+            ]}
+          >
+            <View
+              style={[
+                styles.scannerStatusDot,
+                !hasActiveProfile && { backgroundColor: '#F59E0B' },
+              ]}
+            />
+            <Text
+              style={[
+                styles.scannerStatusText,
+                !hasActiveProfile && { color: '#F59E0B' },
+              ]}
+            >
+              {hasActiveProfile ? 'TERMINAL ACTIVO' : 'SIN PERFIL ACTIVO'}
+            </Text>
           </View>
         </TouchableOpacity>
 
-        {/* Pool: show season info instead of event */}
-        {isSwimmingPool ? (
+        {/* Estado sin perfil activo (ej. todos los perfiles archivados o pendiente de selección) */}
+        {!hasActiveProfile ? (
+          <View style={styles.eventCard}>
+            <View style={styles.noEvent}>
+              <Feather name="alert-circle" size={28} color="#F59E0B" style={{ marginBottom: 8 }} />
+              <Text style={styles.noEventText}>
+                {profiles.length === 0
+                  ? 'No hay perfiles activos disponibles en tu cuenta o plan actual.'
+                  : 'Selecciona un perfil activo para continuar operando.'}
+              </Text>
+              <TouchableOpacity
+                onPress={() =>
+                  profiles.length > 0
+                    ? navigation.navigate('ProfileSelector')
+                    : void syncProfiles()
+                }
+                style={styles.retryButton}
+              >
+                <Text style={styles.retryText}>
+                  {profiles.length > 0 ? 'Seleccionar perfil' : 'Sincronizar perfiles'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : isSwimmingPool ? (
           <View style={styles.eventCard}>
             <View style={styles.eventCardHeader}>
               <View style={styles.cardHeaderWithIcon}>
@@ -359,6 +432,10 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 6,
   },
+  scannerCardDisabled: {
+    opacity: 0.6,
+    borderColor: '#1E293B',
+  },
   scannerIconWrapper: {
     width: 64,
     height: 64,
@@ -394,6 +471,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 20,
+  },
+  scannerStatusPillWarning: {
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderColor: 'rgba(245, 158, 11, 0.25)',
   },
   scannerStatusDot: {
     width: 6,
